@@ -145,7 +145,7 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
                 user_vector_and_coupon_vector.extend(train_coupon_hash_to_vector_dict[coupon_hash])
 
                 train_data.append(user_vector_and_coupon_vector)
-                train_data_label.append(1)
+                train_data_label.append(int(row['ITEM_COUNT']))
 
                 positive_sample_num += 1
 
@@ -179,12 +179,12 @@ def compose_test_data(user_hash_to_vector_dict, test_coupon_hash_to_vector_dict,
     test_coupon = []
     for user_hash in user_hash_to_vector_dict:
         for coupon_hash in test_coupon_hash_to_vector_dict:
-            # if user_hash_to_pref[user_hash] == test_coupon_hash_to_pref[coupon_hash]:
-            vector = list(user_hash_to_vector_dict[user_hash])
-            vector.extend(test_coupon_hash_to_vector_dict[coupon_hash])
+            if user_hash_to_pref[user_hash] == test_coupon_hash_to_pref[coupon_hash]:
+                vector = list(user_hash_to_vector_dict[user_hash])
+                vector.extend(test_coupon_hash_to_vector_dict[coupon_hash])
 
-            test_data.append(vector)
-            test_coupon.append([user_hash, coupon_hash])
+                test_data.append(vector)
+                test_coupon.append([user_hash, coupon_hash])
 
 
 
@@ -228,7 +228,7 @@ def main():
         for user_hash in user_hash_to_vector_dict:
             w.write(user_hash + ',')
             while index < len(prediction) and test_coupon[index][0] == user_hash:
-                if prediction[index] == 1:
+                if prediction[index] >= 1:
                     w.write(test_coupon[index][1] + ' ')
                 index += 1
 
