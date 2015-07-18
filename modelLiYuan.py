@@ -17,6 +17,7 @@ def get_all_pref_name(user_list):
 # The information of REG_DATE and WITHDRAW_DATE can be further used
 def compose_user_hash_to_vector_dict(user_list):
     user_hash_to_vector_dict = {}
+    user_hash_to_pref = {}
 
     pref_name_dict = get_all_pref_name(user_list)
 
@@ -38,16 +39,19 @@ def compose_user_hash_to_vector_dict(user_list):
                     vector.append(1)
                 else:
                     vector.append(0)
+            user_hash_to_pref[row['USER_ID_hash']] = row['PREF_NAME']
+
             user_hash_to_vector_dict[row['USER_ID_hash']] = vector
 
-    return user_hash_to_vector_dict
+    return user_hash_to_vector_dict, user_hash_to_pref
 
 
 
 # The training set spans the dates 2011-07-01 to 2012-06-23.
 # The test set spans the week after the end of the training set, 2012-06-24 to 2012-06-30.
 
-def get_info_from_coupon_list(coupon_list):
+def get_info_from_coupon_list():
+    coupon_list = './data/coupon_list_train.csv' # must be train to include all info
     genre_dict = {}
     large_area_dict = {}
     ken_dict = {}
@@ -72,8 +76,9 @@ def convert_int(value):
 
 def compose_coupon_hash_to_vector_dict(coupon_list):
     coupon_hash_to_vector_dict = {}
+    coupon_hash_to_pref = {}
 
-    genre_dict, large_area_dict, ken_dict, small_area_dict = get_info_from_coupon_list(coupon_list)
+    genre_dict, large_area_dict, ken_dict, small_area_dict = get_info_from_coupon_list()
 
     with open(coupon_list, 'r') as csvfile:
         spamreader = csv.DictReader(csvfile)
@@ -112,13 +117,15 @@ def compose_coupon_hash_to_vector_dict(coupon_list):
                 else:
                     vector.append(0)
 
+            coupon_hash_to_pref[row['COUPON_ID_hash']] = row['ken_name']
+
             coupon_hash_to_vector_dict[row['COUPON_ID_hash']] = vector
 
 
 
 
 
-    return coupon_hash_to_vector_dict
+    return coupon_hash_to_vector_dict, coupon_hash_to_pref
 
 def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict):
     train_data = []
@@ -161,21 +168,27 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
                 user_vector_and_coupon_vector.extend(train_coupon_hash_to_vector_dict[train_coupon_hash])
 
                 train_data.append(user_vector_and_coupon_vector)
-                train_data_label.append(-1)
+                train_data_label.append(0)
 
 
 
     return train_data, train_data_label
 
-def compose_test_data(user_hash_to_vector_dict, test_coupon_hash_to_vector_dict):
+def compose_test_data(user_hash_to_vector_dict, test_coupon_hash_to_vector_dict, user_hash_to_pref, test_coupon_hash_to_pref):
     test_data = []
+    test_coupon = []
     for user_hash in user_hash_to_vector_dict:
         for coupon_hash in test_coupon_hash_to_vector_dict:
-            vector = user_hash_to_vector_dict[user_hash]
+            # if user_hash_to_pref[user_hash] == test_coupon_hash_to_pref[coupon_hash]:
+            vector = list(user_hash_to_vector_dict[user_hash])
             vector.extend(test_coupon_hash_to_vector_dict[coupon_hash])
 
-            test_data.append(test_data)
-    return test_data
+            test_data.append(vector)
+            test_coupon.append([user_hash, coupon_hash])
+
+
+
+    return test_data, test_coupon
 
 
 
@@ -184,46 +197,46 @@ def compose_test_data(user_hash_to_vector_dict, test_coupon_hash_to_vector_dict)
 
 def main():
     user_list = './data/user_list.csv'
-    user_hash_to_vector_dict = compose_user_hash_to_vector_dict(user_list)
+    user_hash_to_vector_dict, user_hash_to_pref = compose_user_hash_to_vector_dict(user_list)
 
     coupon_list_train = './data/coupon_list_train.csv'
-    train_coupon_hash_to_vector_dict = compose_coupon_hash_to_vector_dict(coupon_list_train)
+    train_coupon_hash_to_vector_dict, train_coupon_hash_to_pref = compose_coupon_hash_to_vector_dict(coupon_list_train)
 
     coupon_detail_train = './data/coupon_detail_train.csv'
     train_data, train_data_label = compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict)
 
-
-
-    clf = RandomForestClassifier(max_depth=15,n_estimators=10, n_jobs=20)
+    print 'before training...'
+    clf = RandomForestClassifier(max_depth=15,n_estimators=200, n_jobs=20)
     clf.fit(train_data, train_data_label)
 
+
+    print 'composing test data...'
     coupon_list_test = './data/coupon_list_test.csv'
-    test_coupon_hash_to_vector_dict = compose_coupon_hash_to_vector_dict(coupon_list_test)
+    test_coupon_hash_to_vector_dict, test_coupon_hash_to_pref = compose_coupon_hash_to_vector_dict(coupon_list_test)
 
-    test_data = compose_test_data(user_hash_to_vector_dict, test_coupon_hash_to_vector_dict)
+    test_data, test_coupon = compose_test_data(user_hash_to_vector_dict, test_coupon_hash_to_vector_dict, user_hash_to_pref, test_coupon_hash_to_pref)
+    # print len(test_data)
 
+    print 'before predicting...'
     prediction = clf.predict(test_data)
 
+
+    print 'writing answer...'
     with open('prediction.csv', 'w') as w:
         w.write('USER_ID_hash,PURCHASED_COUPONS\n')
         index = 0
         for user_hash in user_hash_to_vector_dict:
             w.write(user_hash + ',')
-            for coupon_hash in test_coupon_hash_to_vector_dict:
+            while index < len(prediction) and test_coupon[index][0] == user_hash:
                 if prediction[index] == 1:
-                    w.write(coupon_hash + ',')
-
+                    w.write(test_coupon[index][1] + ' ')
                 index += 1
+
+
             w.write('\n')
 
 
 
-
-
-
-
-    # coupon_list_test = './data/coupon_list_test.csv'
-    # test_coupon_hash_to_vector_dict = compose_coupon_hash_to_vector_dict(coupon_list_test)
 
 
 
