@@ -1,5 +1,8 @@
 import csv
 import random
+import numpy
+import math
+from sklearn.ensemble import RandomForestClassifier
 
 
 def get_all_pref_name(user_list):
@@ -164,6 +167,18 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
 
     return train_data, train_data_label
 
+def compose_test_data(user_hash_to_vector_dict, test_coupon_hash_to_vector_dict):
+    test_data = []
+    for user_hash in user_hash_to_vector_dict:
+        for coupon_hash in test_coupon_hash_to_vector_dict:
+            vector = user_hash_to_vector_dict[user_hash]
+            vector.extend(test_coupon_hash_to_vector_dict[coupon_hash])
+
+            test_data.append(test_data)
+    return test_data
+
+
+
 
 
 
@@ -177,7 +192,35 @@ def main():
     coupon_detail_train = './data/coupon_detail_train.csv'
     train_data, train_data_label = compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict)
 
-    print len(train_data)
+
+
+    clf = RandomForestClassifier(max_depth=15,n_estimators=10, n_jobs=20)
+    clf.fit(train_data, train_data_label)
+
+    coupon_list_test = './data/coupon_list_test.csv'
+    test_coupon_hash_to_vector_dict = compose_coupon_hash_to_vector_dict(coupon_list_test)
+
+    test_data = compose_test_data(user_hash_to_vector_dict, test_coupon_hash_to_vector_dict)
+
+    prediction = clf.predict(test_data)
+
+    with open('prediction.csv', 'w') as w:
+        w.write('USER_ID_hash,PURCHASED_COUPONS\n')
+        index = 0
+        for user_hash in user_hash_to_vector_dict:
+            w.write(user_hash + ',')
+            for coupon_hash in test_coupon_hash_to_vector_dict:
+                if prediction[index] == 1:
+                    w.write(coupon_hash + ',')
+
+                index += 1
+            w.write('\n')
+
+
+
+
+
+
 
     # coupon_list_test = './data/coupon_list_test.csv'
     # test_coupon_hash_to_vector_dict = compose_coupon_hash_to_vector_dict(coupon_list_test)
