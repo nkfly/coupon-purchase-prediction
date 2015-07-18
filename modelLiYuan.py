@@ -110,9 +110,14 @@ def compose_coupon_hash_to_vector_dict(coupon_list):
             vector.append(convert_int(row['USABLE_DATE_BEFORE_HOLIDAY']))
 
             # use small area name only
+            # for small_area in small_area_dict:
+            #     if row['small_area_name'] == small_area:
+            #         vector.append(1)
+            #     else:
+            #         vector.append(0)
 
-            for small_area in small_area_dict:
-                if row['small_area_name'] == small_area:
+            for ken in ken_dict:
+                if row['ken_name'] == ken:
                     vector.append(1)
                 else:
                     vector.append(0)
@@ -145,7 +150,7 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
                 user_vector_and_coupon_vector.extend(train_coupon_hash_to_vector_dict[coupon_hash])
 
                 train_data.append(user_vector_and_coupon_vector)
-                train_data_label.append(int(row['ITEM_COUNT']))
+                train_data_label.append(1)
 
                 positive_sample_num += 1
 
