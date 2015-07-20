@@ -162,7 +162,10 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
     return user_hash_to_coupon_list
 
 def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list):
-    train_coupon_list = user_hash_to_train_coupon_list[user_hash]
+    if user_hash not in user_hash_to_train_coupon_list:
+        train_coupon_list = []
+    else:
+        train_coupon_list = user_hash_to_train_coupon_list[user_hash]
 
     if len(train_coupon_list) == 0:
         return 1.0
@@ -192,7 +195,7 @@ def main():
 
     coupon_list_test = './data/coupon_list_test.csv'
     user_hash_to_coupon_average_cosine_distance = {}
-    for user_hash in user_hash_to_train_coupon_list:
+    for user_hash in user_hash_to_vector_dict:
         user_hash_to_coupon_average_cosine_distance[user_hash] = {}
 
 
@@ -225,12 +228,12 @@ def main():
     print 'writing answer...'
     with open('prediction.csv', 'w') as w:
         w.write('USER_ID_hash,PURCHASED_COUPONS\n')
-        for user_hash in user_hash_to_vector_dict:
+        for user_hash in user_hash_to_coupon_average_cosine_distance:
             w.write(user_hash + ',')
 
             index = 0
-            while index < len(user_hash_to_coupon_average_cosine_distance[user]) and index < threshold:
-                w.write(user_hash_to_coupon_average_cosine_distance[user][index][0] + ' ')
+            while index < len(user_hash_to_coupon_average_cosine_distance[user_hash]) and index < threshold:
+                w.write(user_hash_to_coupon_average_cosine_distance[user_hash][index][0] + ' ')
                 index += 1
 
             w.write('\n')
