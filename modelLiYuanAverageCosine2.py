@@ -157,7 +157,8 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
             if user_hash not in user_hash_to_coupon_list:
                 user_hash_to_coupon_list[user_hash] = []
 
-            user_hash_to_coupon_list[user_hash].append(coupon_hash)
+            for i in range(int(row['ITEM_COUNT'])):
+                user_hash_to_coupon_list[user_hash].append(coupon_hash)
 
 
 
