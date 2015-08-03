@@ -74,6 +74,12 @@ def convert_int(value):
         return 1
     else:
         return int(value)
+def process_discount_price(discountPrice):
+    return 1.0/math.log10(discountPrice)
+
+def process_price_rate(priceRate):
+    return priceRate*priceRate/(100.0*100.0)
+
 
 def coupon_row_to_vector(row, genre_dict, large_area_dict, ken_dict, small_area_dict):
     vector = []
@@ -84,30 +90,25 @@ def coupon_row_to_vector(row, genre_dict, large_area_dict, ken_dict, small_area_
         else:
             vector.append(0)
 
-    vector.append(int(row['PRICE_RATE']))
-    vector.append(int(row['CATALOG_PRICE']))
-    vector.append(int(row['DISCOUNT_PRICE']))
+    vector.append(process_discount_price(int(row['DISCOUNT_PRICE'])))
+    vector.append(process_price_rate(int(row['PRICE_RATE'])))
 
-    vector.append(convert_int(row['DISPPERIOD']))
-    vector.append(convert_int(row['VALIDPERIOD']))
+    # vector.append(convert_int(row['USABLE_DATE_MON']))
+    # vector.append(convert_int(row['USABLE_DATE_TUE']))
+    # vector.append(convert_int(row['USABLE_DATE_WED']))
+    # vector.append(convert_int(row['USABLE_DATE_THU']))
+    # vector.append(convert_int(row['USABLE_DATE_FRI']))
+    # vector.append(convert_int(row['USABLE_DATE_SAT']))
+    # vector.append(convert_int(row['USABLE_DATE_SUN']))
+    # vector.append(convert_int(row['USABLE_DATE_HOLIDAY']))
+    # vector.append(convert_int(row['USABLE_DATE_BEFORE_HOLIDAY']))
 
-
-    vector.append(convert_int(row['USABLE_DATE_MON']))
-    vector.append(convert_int(row['USABLE_DATE_TUE']))
-    vector.append(convert_int(row['USABLE_DATE_WED']))
-    vector.append(convert_int(row['USABLE_DATE_THU']))
-    vector.append(convert_int(row['USABLE_DATE_FRI']))
-    vector.append(convert_int(row['USABLE_DATE_SAT']))
-    vector.append(convert_int(row['USABLE_DATE_SUN']))
-    vector.append(convert_int(row['USABLE_DATE_HOLIDAY']))
-    vector.append(convert_int(row['USABLE_DATE_BEFORE_HOLIDAY']))
-
-    # use small area name only
-    # for small_area in small_area_dict:
-    #     if row['small_area_name'] == small_area:
-    #         vector.append(1)
-    #     else:
-    #         vector.append(0)
+    use small area name only
+    for small_area in small_area_dict:
+        if row['small_area_name'] == small_area:
+            vector.append(1)
+        else:
+            vector.append(0)
 
     for ken in ken_dict:
         if row['ken_name'] == ken:
@@ -173,12 +174,15 @@ def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vecto
     sum_cosine_distance = 0.0
     train_coupon_list = user_hash_to_train_coupon_list[user_hash]
 
-    for coupon_hash in train_coupon_list:
-        sum_cosine_distance += cosine(coupon_vector, train_coupon_hash_to_vector_dict[coupon_hash])
+    arr = numpy.array(train_coupon_list[0])
+
+    for i in range(1, len(train_coupon_list)):
+        arr = numpy.array(train_coupon_list[i])
+    
+    arr = arr / float(len(train_coupon_list))
 
 
-    return sum_cosine_distance/len(train_coupon_list)
-
+    return cosine(arr, coupon_vector)
 
 
 
@@ -222,7 +226,7 @@ def main():
 
 
 
-    threshold = 15
+    threshold = 10
 
 
     print 'writing answer...'
