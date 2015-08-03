@@ -1,7 +1,7 @@
 import csv
 import random
 import numpy
-import math
+from math import log10
 from sklearn.ensemble import RandomForestClassifier
 from scipy.spatial.distance import cosine
 import operator
@@ -75,7 +75,9 @@ def convert_int(value):
     else:
         return int(value)
 def process_discount_price(discountPrice):
-    return 1.0/math.log10(discountPrice)
+    if discountPrice == 0:
+        return 10000000
+    return 1.0/log10(discountPrice)
 
 def process_price_rate(priceRate):
     return priceRate*priceRate/(100.0*100.0)
@@ -103,7 +105,7 @@ def coupon_row_to_vector(row, genre_dict, large_area_dict, ken_dict, small_area_
     # vector.append(convert_int(row['USABLE_DATE_HOLIDAY']))
     # vector.append(convert_int(row['USABLE_DATE_BEFORE_HOLIDAY']))
 
-    use small area name only
+    # use small area name only
     for small_area in small_area_dict:
         if row['small_area_name'] == small_area:
             vector.append(1)
@@ -174,11 +176,12 @@ def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vecto
     sum_cosine_distance = 0.0
     train_coupon_list = user_hash_to_train_coupon_list[user_hash]
 
-    arr = numpy.array(train_coupon_list[0])
+    arr = numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[0]])
+
 
     for i in range(1, len(train_coupon_list)):
-        arr = numpy.array(train_coupon_list[i])
-    
+        arr = arr + numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[i]])
+
     arr = arr / float(len(train_coupon_list))
 
 
