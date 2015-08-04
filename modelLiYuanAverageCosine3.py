@@ -254,7 +254,7 @@ def main():
     train_coupon_hash_to_vector_dict, train_coupon_hash_to_pref = compose_coupon_hash_to_vector_dict(coupon_list_train)
 
     coupon_detail_train = './data/coupon_detail_train.csv'
-    user_hash_to_train_coupon_list, coupon_hash_to_train_user_list = compose_train_data(10, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, coupon_hash_to_train_user_list)
+    user_hash_to_train_coupon_list, coupon_hash_to_train_user_list = compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict)
 
     coupon_list_test = './data/coupon_list_test.csv'
     user_hash_to_coupon_average_cosine_distance = {}
@@ -262,7 +262,7 @@ def main():
         user_hash_to_coupon_average_cosine_distance[user_hash] = {}
 
 
-    EM_train_coupon_hash_to_vector_dict = compose_train_coupon_vector_by_EM(train_coupon_hash_to_vector_dict)
+    EM_train_coupon_hash_to_vector_dict = compose_train_coupon_vector_by_EM(10, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, coupon_hash_to_train_user_list)
 
 
 
