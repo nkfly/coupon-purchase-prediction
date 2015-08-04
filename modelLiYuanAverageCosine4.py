@@ -5,7 +5,6 @@ from math import log10
 from sklearn.ensemble import RandomForestClassifier
 from scipy.spatial.distance import cosine
 import operator
-import copy
 
 
 def get_all_pref_name(user_list):
@@ -89,12 +88,12 @@ def coupon_row_to_vector(row, genre_dict, large_area_dict, ken_dict, small_area_
 
     for genre in genre_dict:
         if row['GENRE_NAME'] == genre:
-            vector.append(1)
+            vector.append(3)
         else:
             vector.append(0)
 
     vector.append(process_discount_price(int(row['DISCOUNT_PRICE'])))
-    vector.append(process_price_rate(int(row['PRICE_RATE'])))
+    vector.append(0.2*process_price_rate(int(row['PRICE_RATE'])))
 
     # vector.append(convert_int(row['USABLE_DATE_MON']))
     # vector.append(convert_int(row['USABLE_DATE_TUE']))
@@ -147,7 +146,6 @@ def compose_coupon_hash_to_vector_dict(coupon_list):
 
 def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict):
     user_hash_to_coupon_list = {}
-    coupon_hash_to_user_list = {}
 
 
     with open(coupon_detail_train, 'r') as csvfile:
@@ -159,25 +157,13 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
             if user_hash not in user_hash_to_coupon_list:
                 user_hash_to_coupon_list[user_hash] = []
 
-            if coupon_hash not in coupon_hash_to_user_list:
-                coupon_hash_to_user_list[coupon_hash] = []
-
-            # for i in range(int(row['ITEM_COUNT'])):
-            #     user_hash_to_coupon_list[user_hash].append(coupon_hash)
-            #     coupon_hash_to_user_list[coupon_hash].append(user_hash)
-            user_hash_to_coupon_list[user_hash].append(coupon_hash)
-            coupon_hash_to_user_list[coupon_hash].append(user_hash)
+            for i in range(int(row['ITEM_COUNT'])):
+                user_hash_to_coupon_list[user_hash].append(coupon_hash)
 
 
 
 
-
-
-
-
-
-
-    return user_hash_to_coupon_list, coupon_hash_to_user_list
+    return user_hash_to_coupon_list
 
 def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list):
     if user_hash not in user_hash_to_train_coupon_list:
@@ -194,56 +180,18 @@ def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vecto
     arr = numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[0]])
 
 
+
     for i in range(1, len(train_coupon_list)):
         arr = arr + numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[i]])
 
     arr = arr / float(len(train_coupon_list))
 
+    # weight_matrix = []
+    # weight_matrix.extend([3]*13)
+    # weight_matrix.extend([1]*1)
+
 
     return cosine(arr, coupon_vector)
-
-
-def compose_train_coupon_vector_by_EM(iteration, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, coupon_hash_to_train_user_list):
-    EM_train_coupon_hash_to_vector_dict = copy.deepcopy(train_coupon_hash_to_vector_dict)
-    EM_user_hash_to_vector_dict = {}
-
-    for i in range(iteration):
-        for user_hash in user_hash_to_train_coupon_list:
-            train_coupon_list = user_hash_to_train_coupon_list[user_hash]
-
-            if len(train_coupon_list) == 0:
-                continue
-            arr = numpy.array(EM_train_coupon_hash_to_vector_dict[train_coupon_list[0]])
-
-            for j in range(1, len(train_coupon_list)):
-                arr = arr + numpy.array(EM_train_coupon_hash_to_vector_dict[train_coupon_list[j]])
-            arr = arr / float(len(train_coupon_list))
-
-            EM_user_hash_to_vector_dict[user_hash] = arr
-
-
-
-
-        for train_coupon in EM_train_coupon_hash_to_vector_dict:
-            if train_coupon not in coupon_hash_to_train_user_list:
-                # no one has ever bought this coupon
-                continue
-
-            train_user_list = coupon_hash_to_train_user_list[train_coupon]
-
-            if len(train_user_list) == 0:
-                continue
-
-            arr = numpy.array(EM_user_hash_to_vector_dict[train_user_list[0]])
-            for j in range(1, len(train_user_list)):
-                arr = arr + numpy.array(EM_user_hash_to_vector_dict[train_user_list[j]])
-            arr = arr / float(len(train_user_list))
-
-            EM_train_coupon_hash_to_vector_dict[train_coupon] = arr
-
-
-
-    return EM_train_coupon_hash_to_vector_dict
 
 
 
@@ -256,55 +204,61 @@ def main():
     train_coupon_hash_to_vector_dict, train_coupon_hash_to_pref = compose_coupon_hash_to_vector_dict(coupon_list_train)
 
     coupon_detail_train = './data/coupon_detail_train.csv'
-    user_hash_to_train_coupon_list, coupon_hash_to_train_user_list = compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict)
+    user_hash_to_train_coupon_list = compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict)
 
     coupon_list_test = './data/coupon_list_test.csv'
-    user_hash_to_coupon_average_cosine_distance = {}
-    for user_hash in user_hash_to_vector_dict:
-        user_hash_to_coupon_average_cosine_distance[user_hash] = {}
 
-
-    EM_train_coupon_hash_to_vector_dict = compose_train_coupon_vector_by_EM(3, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, coupon_hash_to_train_user_list)
 
 
 
 
 
     genre_dict, large_area_dict, ken_dict, small_area_dict = get_info_from_coupon_list()
-    with open(coupon_list_test, 'r') as csvfile:
-        spamreader = csv.DictReader(csvfile)
-        for row in spamreader:
-            coupon_vector = coupon_row_to_vector(row, genre_dict, large_area_dict, ken_dict, small_area_dict)
-
-            coupon_hash = row['COUPON_ID_hash']
-
-            for user_hash in user_hash_to_coupon_average_cosine_distance:
-                user_hash_to_coupon_average_cosine_distance[user_hash][coupon_hash] = average_cosine_distance(user_hash, coupon_vector, EM_train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list)
-
-
+    for ii in range(3):
+        user_hash_to_coupon_average_cosine_distance = {}
+        for user_hash in user_hash_to_vector_dict:
+            user_hash_to_coupon_average_cosine_distance[user_hash] = {}
+        
+        with open(coupon_list_test, 'r') as csvfile:
+            spamreader = csv.DictReader(csvfile)
+            for row in spamreader:
+                coupon_vector = coupon_row_to_vector(row, genre_dict, large_area_dict, ken_dict, small_area_dict)
 
 
 
-    for user_hash in user_hash_to_coupon_average_cosine_distance:
-        user_hash_to_coupon_average_cosine_distance[user_hash] = sorted(user_hash_to_coupon_average_cosine_distance[user_hash].items(), key=operator.itemgetter(1))
+                coupon_hash = row['COUPON_ID_hash']
+
+                train_coupon_hash_to_vector_dict[coupon_hash] = coupon_vector
+
+                for user_hash in user_hash_to_coupon_average_cosine_distance:
+                    user_hash_to_coupon_average_cosine_distance[user_hash][coupon_hash] = average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list)
 
 
 
-    threshold = 10
 
 
-    print 'writing answer...'
-    with open('prediction.csv', 'w') as w:
-        w.write('USER_ID_hash,PURCHASED_COUPONS\n')
         for user_hash in user_hash_to_coupon_average_cosine_distance:
-            w.write(user_hash + ',')
+            user_hash_to_coupon_average_cosine_distance[user_hash] = sorted(user_hash_to_coupon_average_cosine_distance[user_hash].items(), key=operator.itemgetter(1))
 
-            index = 0
-            while index < len(user_hash_to_coupon_average_cosine_distance[user_hash]) and index < threshold:
-                w.write(user_hash_to_coupon_average_cosine_distance[user_hash][index][0] + ' ')
-                index += 1
 
-            w.write('\n')
+
+        threshold = 10
+
+
+        print 'writing answer...'
+        with open('prediction.csv', 'w') as w:
+            w.write('USER_ID_hash,PURCHASED_COUPONS\n')
+            for user_hash in user_hash_to_coupon_average_cosine_distance:
+                w.write(user_hash + ',')
+
+                index = 0
+                while index < len(user_hash_to_coupon_average_cosine_distance[user_hash]) and index < threshold:
+                    w.write(user_hash_to_coupon_average_cosine_distance[user_hash][index][0] + ' ')
+                    if user_hash in user_hash_to_train_coupon_list:
+                        user_hash_to_train_coupon_list[user_hash].append(user_hash_to_coupon_average_cosine_distance[user_hash][index][0])
+                    index += 1
+
+                w.write('\n')
 
 
 
