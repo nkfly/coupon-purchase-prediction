@@ -81,7 +81,7 @@ def process_discount_price(discountPrice):
     return 1.0/log10(discountPrice)
 
 def process_price_rate(priceRate):
-    return priceRate*priceRate/(100.0*100.0)
+    return log10(1+priceRate*priceRate/(100.0*100.0))
 
 
 def coupon_row_to_vector(row, genre_dict, large_area_dict, ken_dict, small_area_dict):
@@ -159,11 +159,12 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
             if user_hash not in user_hash_to_coupon_list:
                 user_hash_to_coupon_list[user_hash] = []
 
-            if coupon_hash not in coupon_hash_to_user_list:
-                coupon_hash_to_user_list[coupon_hash] = []
 
             for i in range(int(row['ITEM_COUNT'])):
                 user_hash_to_coupon_list[user_hash].append(coupon_hash)
+            # user_hash_to_coupon_list[user_hash].append(coupon_hash)
+            # user_hash_to_coupon_list[user_hash].append(int(row['ITEM_COUNT']))
+
                 # coupon_hash_to_user_list[coupon_hash].append(user_hash)
             # user_hash_to_coupon_list[user_hash].append(coupon_hash)
             # coupon_hash_to_user_list[coupon_hash].append(user_hash)
@@ -193,16 +194,22 @@ def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vecto
 
     arr = numpy.array([0] * len(train_coupon_hash_to_vector_dict[train_coupon_list[0]]))
 
-
+    # i = 0
+    # while i < len(train_coupon_list):
+    #     vec = train_coupon_hash_to_vector_dict[train_coupon_list[i]]
+    #     i += 1
+    #     arr = arr + log10(1 + train_coupon_list[i]) * numpy.array(vec)
+    #     i += 1
     for i in range(0, len(train_coupon_list)):
         if user_hash in user_buy_and_view and train_coupon_list[i] in user_buy_and_view[user_hash]:
             view = user_buy_and_view[user_hash][train_coupon_list[i]]['view']
-            buy = user_buy_and_view[user_hash][train_coupon_list[i]]['buy']
-            arr = arr + ((float(buy) / view) * numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[i]]))
-        else:
-            arr = arr + numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[i]])
+        #     buy = user_buy_and_view[user_hash][train_coupon_list[i]]['buy']
+            arr = arr + view * numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[i]])
+        # else:
+        #     arr = arr + numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[i]])
+        # arr = arr + numpy.array(train_coupon_hash_to_vector_dict[train_coupon_list[i]])
 
-        
+
 
     arr = arr / float(len(train_coupon_list))
 
@@ -221,7 +228,7 @@ def get_user_buy_and_view(coupon_visit_train):
             if user_hash not in user_buy_and_view:
                 user_buy_and_view[user_hash] = {}
             if coupon_hash not in user_buy_and_view[user_hash]:
-                user_buy_and_view[user_hash][coupon_hash] = {view : 0, buy : 0}
+                user_buy_and_view[user_hash][coupon_hash] = {'view' : 0, 'buy' : 0}
 
             user_buy_and_view[user_hash][coupon_hash]['view'] += 1
             user_buy_and_view[user_hash][coupon_hash]['buy'] += int(row['PURCHASE_FLG'])
@@ -246,7 +253,7 @@ def main():
 
 
     coupon_visit_train = './data/coupon_visit_train.csv'
-    user_buy_and_view = get_user_buy_and_view(coupon_visit_train):
+    user_buy_and_view = get_user_buy_and_view(coupon_visit_train)
     # EM_train_coupon_hash_to_vector_dict = compose_train_coupon_vector_by_EM(0, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, coupon_hash_to_train_user_list)
 
 
