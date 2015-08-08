@@ -77,7 +77,7 @@ def convert_int(value):
         return int(value)
 def process_discount_price(discountPrice):
     if discountPrice == 0:
-        return 10000000
+        return 0
     return 1.0/log10(discountPrice)
 
 def process_price_rate(priceRate):
@@ -109,13 +109,13 @@ def coupon_row_to_vector(row, genre_dict, large_area_dict, ken_dict, small_area_
     # use small area name only
     for small_area in small_area_dict:
         if row['small_area_name'] == small_area:
-            vector.append(1)
+            vector.append(3)
         else:
             vector.append(0)
 
     for ken in ken_dict:
         if row['ken_name'] == ken:
-            vector.append(1)
+            vector.append(3)
         else:
             vector.append(0)
 
