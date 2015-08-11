@@ -167,7 +167,7 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
 
 
             time = row['I_DATE']
-            dtime = datetime.strptime(time, '%Y-%m-%d %H:%M:%S')
+            dtime = datetime.datetime.strptime(time, '%Y-%m-%d %H:%M:%S')
 
             if user_hash not in user_hash_to_day_probability:
                 user_hash_to_day_probability[user_hash] = {}
@@ -190,7 +190,7 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
             sumOfBuy += user_hash_to_day_probability[user_hash][day]
 
         for day in user_hash_to_day_probability[user_hash]:
-            user_hash_to_day_probability[user_hash][day] = float(user_hash_to_day_probability[user_hash][day])/sumOfBuy
+            user_hash_to_day_probability[user_hash][day] = float(user_hash_to_day_probability[user_hash][day])
 
 
 
@@ -202,7 +202,7 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
             user_hash = row['USER_ID_hash']
             coupon_hash = row['COUPON_ID_hash']
             time = row['I_DATE']
-            dtime = datetime.strptime(time, '%Y-%m-%d %H:%M:%S')
+            dtime = datetime.datetime.strptime(time, '%Y-%m-%d %H:%M:%S')
 
             user_hash_to_day_probability[user_hash][coupon_hash] = user_hash_to_day_probability[user_hash][dtime.weekday()]
 
@@ -216,7 +216,7 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
 
     return user_hash_to_coupon_list, user_hash_to_day_probability
 
-def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, user_buy_and_view):
+def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, user_buy_and_view, user_hash_to_day_probability):
     if user_hash not in user_hash_to_train_coupon_list:
         train_coupon_list = []
     else:

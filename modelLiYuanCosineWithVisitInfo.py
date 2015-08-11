@@ -147,6 +147,8 @@ def compose_coupon_hash_to_vector_dict(coupon_list):
 
 def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict):
     user_hash_to_coupon_list = {}
+    user_hash_to_count = {}
+    coupon_to_different_user_buy = {}
     # coupon_hash_to_user_list = {}
 
 
@@ -162,6 +164,15 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
 
             for i in range(int(row['ITEM_COUNT'])):
                 user_hash_to_coupon_list[user_hash].append(coupon_hash)
+
+            if user_hash not in user_hash_to_count:
+                user_hash_to_count[user_hash] = 1
+            else:
+                user_hash_to_count[user_hash] += 1
+
+            if coupon_hash not in coupon_to_different_user_buy:
+                coupon_to_different_user_buy[coupon_hash] = {}
+            coupon_to_different_user_buy[coupon_hash][user_hash]= True
             # user_hash_to_coupon_list[user_hash].append(coupon_hash)
             # user_hash_to_coupon_list[user_hash].append(int(row['ITEM_COUNT']))
 
@@ -176,11 +187,12 @@ def compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coup
 
 
 
+    n = float(len(user_hash_to_coupon_list))
+    for coupon_hash in coupon_to_different_user_buy:
+        coupon_to_different_user_buy[coupon_hash] = len(coupon_to_different_user_buy[coupon_hash])
+    return user_hash_to_coupon_list, user_hash_to_count, coupon_to_different_user_buy
 
-
-    return user_hash_to_coupon_list
-
-def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, user_buy_and_view):
+def average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, user_buy_and_view, coupon_to_different_user_buy):
     if user_hash not in user_hash_to_train_coupon_list:
         train_coupon_list = []
     else:
@@ -244,7 +256,17 @@ def main():
     train_coupon_hash_to_vector_dict, train_coupon_hash_to_pref = compose_coupon_hash_to_vector_dict(coupon_list_train)
 
     coupon_detail_train = './data/coupon_detail_train.csv'
-    user_hash_to_train_coupon_list = compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict)
+    user_hash_to_train_coupon_list, user_hash_to_count, coupon_to_different_user_buy = compose_train_data(coupon_detail_train, user_hash_to_vector_dict, train_coupon_hash_to_vector_dict)
+
+    averageBuy = 0
+    for user_hash in user_hash_to_count:
+        averageBuy += user_hash_to_count[user_hash]
+
+    averageBuy /= float(len(user_hash_to_count))
+    # user_hash_to_count['average'] = averageBuy
+
+
+
 
     coupon_list_test = './data/coupon_list_test.csv'
     user_hash_to_coupon_average_cosine_distance = {}
@@ -269,7 +291,7 @@ def main():
             coupon_hash = row['COUPON_ID_hash']
 
             for user_hash in user_hash_to_coupon_average_cosine_distance:
-                user_hash_to_coupon_average_cosine_distance[user_hash][coupon_hash] = average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, user_buy_and_view)
+                user_hash_to_coupon_average_cosine_distance[user_hash][coupon_hash] = average_cosine_distance(user_hash, coupon_vector, train_coupon_hash_to_vector_dict, user_hash_to_train_coupon_list, user_buy_and_view, coupon_to_different_user_buy)
 
 
 
@@ -280,7 +302,7 @@ def main():
 
 
 
-    threshold = 10
+    threshold = int(averageBuy)
 
 
     print 'writing answer...'
@@ -288,6 +310,13 @@ def main():
         w.write('USER_ID_hash,PURCHASED_COUPONS\n')
         for user_hash in user_hash_to_coupon_average_cosine_distance:
             w.write(user_hash + ',')
+
+            # if user_hash in user_hash_to_count and user_hash_to_count[user_hash] > averageBuy:
+            #     threshold = 11
+            # elif user_hash in user_hash_to_count and user_hash_to_count[user_hash] < averageBuy:
+            #     threshold = 9
+
+
 
             index = 0
             while index < len(user_hash_to_coupon_average_cosine_distance[user_hash]) and index < threshold:
